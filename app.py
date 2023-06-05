@@ -5,7 +5,7 @@ from flask import render_template
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api
-from datab import  secret_key, secret_key2, admin_pass, email_pass ,email_user # ,Salt
+#from datab import  secret_key, secret_key2, admin_pass, email_pass ,email_user # ,Salt
 
 from resources.accounts import Accounts, AccountsList, money
 from resources.email import eMail, eMail2, eMail3, mail, limiter2
@@ -16,9 +16,9 @@ from acces_control import require_access
 from flask_wtf.csrf import  CSRFProtect
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secret_key
-app.config['Admin_Pass'] = admin_pass
-app.config['SECRET_KEY2'] = secret_key2
+app.config['SECRET_KEY'] = '1234'#secret_key
+app.config['Admin_Pass'] ='1234'# admin_pass
+app.config['SECRET_KEY2'] = '1234'#secret_key2
 #app.config['Salt'] = Salt
 
 
@@ -37,8 +37,8 @@ api = Api(app)
 
 app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = email_user
-app.config['MAIL_PASSWORD'] = email_pass
+app.config['MAIL_USERNAME'] = '1234'# email_user
+app.config['MAIL_PASSWORD'] = '1234'# email_pass
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
