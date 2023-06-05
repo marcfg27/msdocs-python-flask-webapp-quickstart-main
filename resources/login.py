@@ -86,6 +86,8 @@ class Login(Resource):
                 username = username.casefold()
                 username = unidecode(username)
                 password=data['password']
+                a = current_app.secret_key
+                return jsonify({'message': a})
                 acc = AccountsModel.get_by_username(username)
                 if acc:
                     if(acc.verify_password(password)):
