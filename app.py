@@ -1,12 +1,19 @@
 import os
 
-from flask import (Flask, render_template,
-                   send_from_directory,request)
-from flask_wtf.csrf import  CSRFProtect
+from flask import Flask, request, redirect, send_from_directory
+from flask import render_template
 from flask_cors import CORS
-from flask_restful import Api,reqparse
-from flask_limiter import Limiter
-from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_restful import Api
+
+from resources.accounts import Accounts, AccountsList, money
+from resources.email import eMail, eMail2, eMail3, mail, limiter2
+from resources.login import Login, limiter
+
+from acces_control import require_access
+#from flask_sslify import SSLify
+from flask_wtf.csrf import  CSRFProtect
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '1234'
 app.config['SECRET_KEY'] = '1234'
@@ -22,22 +29,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 api = Api(app)
-def get_user():
-    try:
-        parser = reqparse.RequestParser()
-        parser.add_argument('username', type=str, required=True, help="This field cannot be left blanck")
-        data = parser.parse_args()
-        username = data['username']
 
-        if username:
-            request.username = username
-            return username
-        else:
-            return None
-    except:
-        return None
-mail = Mail()
-limiter = Limiter(key_func=get_user,storage_uri="memory://", strategy="fixed-window-elastic-expiry")
+
 
 #migrate = Migrate(app, db)
 #db.init_app(app)
@@ -57,7 +50,16 @@ mail.init_app(app)
 limiter.init_app(app)
 csrf = CSRFProtect(app)
 
+api.add_resource(Accounts, '/account')
+api.add_resource(AccountsList, '/accounts')
 
+api.add_resource(Login, '/login')
+
+api.add_resource(eMail, '/email')
+api.add_resource(eMail2, '/email2')
+api.add_resource(eMail3, '/email3')
+
+api.add_resource(money,'/money')#/<string:username>
 @app.route('/')
 def render_vue():
         return render_template("index.html")
