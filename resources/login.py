@@ -4,7 +4,7 @@ import logging
 import secrets
 import string
 from functools import wraps
-
+from LogManager import LoginLog
 from flask import jsonify, make_response, current_app
 from flask import request
 from flask_limiter import Limiter, RateLimitExceeded
@@ -14,6 +14,7 @@ from unidecode import unidecode
 
 from acces_control import generate_auth_token
 from lock import lock
+from models.accounts import AccountsModel
 
 #logging.basicConfig(filename='failed_attempts.log', level=logging.INFO)
 #failed_attempts = {}
@@ -60,6 +61,7 @@ def catch_exceptions(f):
         try:
             return f(*args, **kwargs)
         except RateLimitExceeded as e:
+            LoginLog.login_limit_caller(request.username, request)
             #logging.warning('Rate limit exceeded for username %s in address %s', request.username, request.remote_addr)
             return {'message': str(e)}, 429
         except Exception as e:
@@ -84,7 +86,7 @@ class Login(Resource):
                 username = username.casefold()
                 username = unidecode(username)
                 password=data['password']
-                acc = 'h'
+                acc = AccountsModel.get_by_username(username)
                 if acc:
                     if(acc.verify_password(password)):
                         caracteres = string.ascii_letters + string.digits
@@ -99,8 +101,10 @@ class Login(Resource):
                         response.headers['Authorization'] = f'Bearer {token}'
                         response.headers['Access-Control-Expose-Headers'] = 'Authorization'
                         response.set_cookie('ctx', contexto_usuario, samesite='Strict', secure=True, httponly=True,max_age=t)
+                        LoginLog.registro_exitoso_caller(username,request)
 
                     else:
+                        LoginLog.registro_contrasena_incorrecta_caller(username,request)
                        # logging.warning('Incorrect password for user %s from IP address: %s',
                         #             request.remote_addr, username)
 
@@ -109,6 +113,7 @@ class Login(Resource):
                         #response = jsonify({"message": "Incorrect password for user [{}].".format(username)})
                         response.status_code = 400
                 else:
+                    LoginLog.registro_usuario_incorrecto_caller(username, request)
                     #logging.warning('Incorrect user:  %s from IP address: %s',
                      #               request.remote_addr, username)
                     #response = jsonify({"message": "Account with username [{}] doesen't exists.".format(username)})

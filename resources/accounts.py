@@ -15,9 +15,9 @@ from markupsafe import escape
 from unidecode import unidecode
 
 from lock import lock
-#from models.accounts import AccountsModel, auth
-#from LogManager import validation
-#from datab import db
+from models.accounts import AccountsModel, auth
+from LogManager import validation
+from datab import db
 
 #import pymysql
 
@@ -50,11 +50,13 @@ class Accounts(Resource):
 
             if not valid_username or len(user)>30:
                # return {'message': 'Invalid username. Only alphanumeric characters are allowed.'}, 400
+               validation.input_validation_fail_username_caller(user,request)
                return {'message': "Error creating Account"}, 409
 
 
             if not valid_email:
                # return {'message': 'Invalid email. Please enter a valid email address.'}, 400
+               validation.input_validation_fail_email_caller(user,email,request)
                return {'message': "Error creating Account"}, 409
 
             password = data['password']
@@ -67,7 +69,7 @@ class Accounts(Resource):
             lengthMax = len(password) < 65
 
             if not hasCapital or not hasLowercase or not hasNumber or not hasSpecialChar or not lengthReq or not lengthMax :
-                #validation.input_validation_fail_password_caller(user,request)
+                validation.input_validation_fail_password_caller(user,request)
                 return {'message': "Error creating Account"}, 409
             result = pwnedpasswords.check(password, plain_text=True)
             if result:
@@ -78,7 +80,7 @@ class Accounts(Resource):
             username = unidecode(username)
 
             email = escape(data['email'])
-            acc1 = 'h'
+            acc1 = AccountsModel.get_by_username(username)
 
             if(not acc1):
                 if str(is_admin) ==current_app.config['Admin_Pass']:
@@ -86,13 +88,13 @@ class Accounts(Resource):
                 else:
                     is_admin = 0
                 if(avalible_money != None and is_admin != None):
-                    acc = 'h'
+                    acc = AccountsModel(username,email,avalible_money,is_admin)
                 elif(avalible_money != None):
-                    acc= 'h'
+                    acc= AccountsModel(username,email,available_money=avalible_money)
                 elif(is_admin != None):
-                    acc= 'h'
+                    acc= AccountsModel(username,email,is_admin=is_admin)
                 else:
-                    acc = 'h'
+                    acc = AccountsModel(username,email)
                 acc.hash_password(data['password'])
                 try:
                     acc.assign_basic_functions()
@@ -109,7 +111,7 @@ class Accounts(Resource):
    # @require_access('d_account')
     def delete(self, username):
         with lock.lock:
-            acc = 'h'
+            acc = AccountsModel.get_by_username(username)
             if(acc):
                 acc.delete_from_db()
                 return {'message': "Account with username [{}] deleted".format(username)}, 200
@@ -121,7 +123,7 @@ class Accounts(Resource):
 class AccountsList(Resource):
    # @require_access('g_accounts')
     def get(self):
-        return {'AccountsList': 'h'}, 200
+        return {'AccountsList': AccountsModel.get_list()}, 200
 
 
 
@@ -136,17 +138,17 @@ class money(Resource):
         username2 = '\' or username=\'marc\' --'
         if(username):
             try:
-                #connection = db.engine.connect()
+                connection = db.engine.connect()
 
-                #query = db.text("SELECT available_money FROM accounts WHERE username = '" + username  + "'")
-                #result = connection.execute(query).fetchone()
-                #connection.close()
-                #money =  result[0]
+                query = db.text("SELECT available_money FROM accounts WHERE username = '" + username  + "'")
+                result = connection.execute(query).fetchone()
+                connection.close()
+                money =  result[0]
 
                 #escaped = pymysql.converters.escape_string(username2)
 
 
-                money ='h'
+                money =AccountsModel.get_money(username)
 
                 '''connection = db.engine.connect()
                 query = db.text("SELECT available_money FROM accounts WHERE username = :username")

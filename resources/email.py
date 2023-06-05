@@ -12,11 +12,11 @@ from flask_limiter import Limiter, RateLimitExceeded
 from flask_restful import Resource, reqparse
 from markupsafe import escape
 from unidecode import unidecode
-from models.accounts import  mail
 
 from acces_control import generate_auth_token
 from lock import lock
-
+from models.accounts import AccountsModel, auth, mail
+from LogManager import EmailLog,validation
 
 
 
@@ -37,12 +37,13 @@ class eMail(Resource):
 
             valid_code = re.match(r'^[a-zA-Z0-9]+$', data['code'])
             if not valid_code:
+                validation.input_validation_fail_code_caller(g.user,data['code'],request)
                 return {'message': 'Invalid Code. Only alphanumeric characters are allowed.'}, 400
             if g.user is not None and True: # verify_verification_code(g.user.code, code):
                 g.user.code = None
                 g.user.save_to_db()
                 username = g.user.username
-                acc = 'h'
+                acc = AccountsModel.get_by_username(username)
                 caracteres = string.ascii_letters + string.digits
                 contexto_usuario = ''.join(secrets.choice(caracteres) for i in range(20))
 
@@ -60,7 +61,7 @@ class eMail(Resource):
                 return response
             else:
                 response = jsonify({'correct': False})
-
+                EmailLog.f2code_fail_caller(g.user,request)
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
                 return response
         except Exception as e:
@@ -133,6 +134,7 @@ def catch_exceptions(f):
         try:
             return f(*args, **kwargs)
         except RateLimitExceeded as e:
+            EmailLog.resetlimit_caller(request.username,request)
             return {'message': str(e)}, 429
     return wrapper
 
@@ -146,7 +148,7 @@ class eMail2(Resource):
         username = escape(data['username'])
         username = username.casefold()
         username = unidecode(username)
-        user = 'h'
+        user = AccountsModel.get_by_username(username)
         with lock.lock:
             if user is None:
                 response = jsonify({'intervalo': 500})
@@ -180,11 +182,12 @@ class eMail3(Resource):
                 username = escape(data['username'])
                 username = username.casefold()
                 username = unidecode(username)
-                user = 'h'
+                user = AccountsModel.get_by_username(username)
 
 
                 valid_code = re.match(r'^[a-zA-Z0-9]+$', data['code'])
                 if not valid_code:
+                    EmailLog.resetfail_caller(username,request.remote_addr)
                     return {'message': 'Invalid Code. Only alphanumeric characters are allowed.'}, 400
 
                 if user is not None and verify_verification_code(user.code, code,500):
@@ -193,8 +196,10 @@ class eMail3(Resource):
                     user.hash_password(data['password'])
                     user.save_to_db()
                     response = jsonify({'message': 'password changed'})
+                    EmailLog.reset_caller(username,request.remote_addr)
                     return response
                 else:
+                    EmailLog.resetfail_caller(username,request.remote_addr)
                     response = jsonify({'message': 'Error code not valid'})
                     # response.headers['Access-Control-Expose-Headers'] = 'Authorization'
                     response.headers['Access-Control-Allow-Credentials'] = 'true'

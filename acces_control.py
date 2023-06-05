@@ -14,11 +14,11 @@ from flask import g, current_app, redirect, url_for, abort, jsonify
 from flask_httpauth import HTTPTokenAuth
 from flask_mail import Mail, Message
 from jwt import encode, decode, ExpiredSignatureError, InvalidSignatureError
-#from LogManager import tokenLog
+from LogManager import tokenLog
 
-#from datab import db
-#from models.Function import Function
-#from models.accounts import AccountsModel
+from datab import db
+from models.Function import Function
+from models.accounts import AccountsModel
 
 auth = HTTPTokenAuth(scheme="Bearer")
 mail = Mail()
@@ -56,22 +56,22 @@ def generate_auth_token(id, contexto, expiration=6000):
     return token
 
 
-#from models.revokedTokens import  RevokedToken
+from models.revokedTokens import  RevokedToken
 def verify_auth_token(token,ContextoUsuario,bool):
         try:
             a = request
             data = decode_auth_token(token,bool)
 
         except ExpiredSignatureError:
-            #tokenLog.token_expired_caller(request)
+            tokenLog.token_expired_caller(request)
             return None  # expired token
         except InvalidSignatureError:
-            #tokenLog.invalid_token_caller(request)
+            tokenLog.invalid_token_caller(request)
             return None  # invalid token
         except Exception:
-            #tokenLog.invalid_token_caller(request)
+            tokenLog.invalid_token_caller(request)
             return None  # bad token (e.g. DecodeError)
-        user = 'hola' #AccountsModel.get_by_id(data["id"])
+        user = AccountsModel.get_by_id(data["id"])
         if data['hash_contexto_usuario'] == hmac.new(current_app.secret_key.encode('utf-8'), ContextoUsuario.encode('utf-8'), hashlib.sha256).hexdigest():
             '''if (a.endpoint == 'closes'):
                 token = RevokedToken(data['hash_contexto_usuario'], data['exp'])
@@ -81,7 +81,7 @@ def verify_auth_token(token,ContextoUsuario,bool):
                 if(token):
                     return None'''
             return user
-        #tokenLog.invalid_user_context_caller(request,user.username)
+        tokenLog.invalid_user_context_caller(request,user.username)
         return None
 
 
@@ -132,12 +132,12 @@ def verify_token(token):
                     #return None
                     raise ValueError("token-fail")
             else:
-                #tokenLog.missing_token_caller(request)
+                tokenLog.missing_token_caller(request)
                # return None
                 raise ValueError("token-fail")
 
         else:
-            #tokenLog.missing_user_context_caller(request)
+            tokenLog.missing_user_context_caller(request)
             #return None
 
             raise ValueError("token-fail")
@@ -160,25 +160,25 @@ def get_user_roles(user):
 
 
 def user_has_access(user, endpoint,method):
-    function ='hola' #Function.get_function_by_name(method+endpoint)
+    function = Function.get_function_by_name(method+endpoint)
     boolean =  function in user.functions
     return boolean
 
 
 def assign_function_to_username(username, function):
-    user ='h' #AccountsModel.get_by_username(username)
-    function = 'h' #Function.get_function_by_name(function)
+    user = AccountsModel.get_by_username(username)
+    function = Function.get_function_by_name(function)
     if user and function:
         user.functions.append(function)
-        #db.session.commit()
+        db.session.commit()
         return True
     return False
 
 def assign_function_to_user(user, function):
-    function = 'h' #Function.get_function_by_name(function)
+    function = Function.get_function_by_name(function)
     if user and function:
         user.functions.append(function)
-        #db.session.commit()
+        db.session.commit()
         return True
     return False
 
@@ -207,8 +207,7 @@ def require_access(view_func):
             return inner_wrapper()
         except Exception as e:
             if str(e) != "token-fail":
-                print('hola')
-                #tokenLog.AuthorizationException_caller(request, str(e))
+                tokenLog.AuthorizationException_caller(request, str(e))
             if(method == 'GET' and endpoint == 'inside'):
                 return redirect('/')
             else:
