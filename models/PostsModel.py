@@ -8,11 +8,11 @@ from sqlalchemy.dialects.postgresql import UUID
 class PostsModel(db.Model):
     __tablename__ = "posts"
 
-    id = db.Column('id',db.Text(length=36),default=lambda: str(uuid.uuid4()),primary_key=True)
+    id = db.Column('id',db.String(length=36),default=lambda: str(uuid.uuid4()),primary_key=True)
     text = db.Column(db.String(280), unique=False, nullable=False)
     time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     archived = db.Column(db.Integer, nullable=False, default=0)
-    account_id = db.Column(db.Integer, db.ForeignKey("accounts.id"), nullable=False)
+    account_id = db.Column(db.String(36), db.ForeignKey("accounts.id"), nullable=False)
 
     # usuari que publica el post
     account = db.relationship("AccountsModel", foreign_keys=[account_id], back_populates="posts")

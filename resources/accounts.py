@@ -38,10 +38,8 @@ class Accounts(Resource):
             parser.add_argument('password', type=str, required=True, help="This field cannot be left blanck")
             parser.add_argument('email', type=str, required=True, help="This field cannot be left blanck")
             parser.add_argument('available_money', type=int,required=False)
-            parser.add_argument('is_admin', type=int,required=False)
             data = parser.parse_args()
             avalible_money=data['available_money']
-            is_admin=data['is_admin']
 
             user = data['username']
             email = data['email']
@@ -49,7 +47,6 @@ class Accounts(Resource):
             valid_email = re.match(r'^\w+@\w+\.\w+$', email)
 
             if not valid_username or len(user)>30:
-               # return {'message': 'Invalid username. Only alphanumeric characters are allowed.'}, 400
                validation.input_validation_fail_username_caller(user,request)
                return {'message': "Error creating Account"}, 409
 
@@ -83,20 +80,15 @@ class Accounts(Resource):
             acc1 = AccountsModel.get_by_username(username)
 
             if(not acc1):
-                if str(is_admin) ==current_app.config['Admin_Pass']:
-                    is_admin = 1
-                else:
-                    is_admin = 0
-                if(avalible_money != None and is_admin != None):
-                    acc = AccountsModel(username,email,avalible_money,is_admin)
-                elif(avalible_money != None):
+
+                if(avalible_money is not None):
                     acc= AccountsModel(username,email,available_money=avalible_money)
-                elif(is_admin != None):
-                    acc= AccountsModel(username,email,is_admin=is_admin)
+
                 else:
                     acc = AccountsModel(username,email)
                 acc.hash_password(data['password'])
                 try:
+                    acc.save_to_db()
                     acc.assign_basic_functions()
 
                     acc.save_to_db()
@@ -138,12 +130,12 @@ class money(Resource):
         username2 = '\' or username=\'marc\' --'
         if(username):
             try:
-                connection = db.engine.connect()
+                '''connection = db.engine.connect()
 
                 query = db.text("SELECT available_money FROM accounts WHERE username = '" + username  + "'")
                 result = connection.execute(query).fetchone()
                 connection.close()
-                money =  result[0]
+                money =  result[0]'''
 
                 #escaped = pymysql.converters.escape_string(username2)
 
@@ -167,7 +159,7 @@ class money(Resource):
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
                 return response
         else:
-            response = jsonify({'message': 'User not Found'}, 404)
+            response = jsonify({'message': 'User not Found'})
             response.status_code = 404
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             return response

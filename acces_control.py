@@ -61,7 +61,6 @@ def verify_auth_token(token,ContextoUsuario,bool):
         try:
             a = request
             data = decode_auth_token(token,bool)
-
         except ExpiredSignatureError:
             tokenLog.token_expired_caller(request)
             return None  # expired token
@@ -73,7 +72,7 @@ def verify_auth_token(token,ContextoUsuario,bool):
             return None  # bad token (e.g. DecodeError)
         user = AccountsModel.get_by_id(data["id"])
         if data['hash_contexto_usuario'] == hmac.new(current_app.secret_key.encode('utf-8'), ContextoUsuario.encode('utf-8'), hashlib.sha256).hexdigest():
-            '''if (a.endpoint == 'closes'):
+            '''if (request.endpoint == 'closes'):
                 token = RevokedToken(data['hash_contexto_usuario'], data['exp'])
                 token.save_to_db()
             else:
@@ -97,7 +96,6 @@ def decode_auth_token(token,bool):
         nonce = token_bytes[:12]
         ciphertext = token_bytes[12:]
 
-        # Decrypt payload using AES-GCM
         if(bool):
             secret1= current_app.config['SECRET_KEY2']
             secret2 = current_app.secret_key
@@ -148,12 +146,12 @@ def verify_token(token):
 
 
 
-@auth.get_user_roles
+'''@auth.get_user_roles
 def get_user_roles(user):
     roles = ["user"]
     if user.is_admin:
         roles.append("admin")
-    return roles
+    return roles'''
 
 
 
@@ -201,7 +199,7 @@ def require_access(view_func):
             @auth.login_required
             def inner_wrapper():
                 if not user_has_access(g.user, endpoint, method):
-                    raise ValueError("token-fail")
+                    raise ValueError("no-acces")
                 return view_func(*args, **kwargs)
 
             return inner_wrapper()
@@ -211,7 +209,7 @@ def require_access(view_func):
             if(method == 'GET' and endpoint == 'inside'):
                 return redirect('/')
             else:
-                return jsonify({'error': 'Token ha fallado'}), 401
+                return {'error': 'Token ha fallado'}, 401
 
     return wrapper
 
