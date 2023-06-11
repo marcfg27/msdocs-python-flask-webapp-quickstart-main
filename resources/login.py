@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import logging
+import os
 import secrets
 import string
 from functools import wraps
@@ -77,7 +78,7 @@ class Login(Resource):
     def post(self):
         try:
             with lock.lock:
-                return {'message': "hello"}, 200
+                return {'message':os.environ.get('SCM_DO_BUILD_DURING_DEPLOYMENT')}, 200
 
         except Exception as e:
             logging.error('Unexpected error during login: %s', e)
