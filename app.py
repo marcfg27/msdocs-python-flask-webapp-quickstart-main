@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, send_from_directory
 from flask import render_template
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -15,16 +15,12 @@ from resources.login import Login, limiter
 from resources.posts import Posts
 from resources.xml import XML_HTTP
 from acces_control import require_access
-from flask_sslify import SSLify
 
+from acces_control import require_access
+#from flask_sslify import SSLify
+from flask_wtf.csrf import  CSRFProtect
 
-# app = Flask(__name__)
-app = Flask(
-    __name__,
-    static_folder="frontend/dist/assets",
-    template_folder="frontend/dist"
-)
-sslify = SSLify(app)
+app = Flask(__name__)
 app.config['SECRET_KEY'] = secret_key
 app.config['Admin_Pass'] = admin_pass
 app.config['SECRET_KEY2'] = secret_key2
@@ -34,7 +30,8 @@ app.config['SECRET_KEY2'] = secret_key2
 
 
 CORS(app, resources={r'/*': {'origins': '*'}})
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('azure')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('databseLogin')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 api = Api(app)
@@ -80,22 +77,8 @@ api.add_resource(money,'/money')#/<string:username>
 from flask_wtf.csrf import  CSRFProtect
 
 csrf = CSRFProtect(app)
-
 @app.route('/')
 def render_vue():
-    '''f.create_function('GETaccounts')
-    f.create_function('GETmoney')
-    f.create_function('GETposts')
-    f.create_function('GETinside')
-    f.create_function('DELETEposts')
-    f.create_function('POSTxml_http')
-    f.create_function('POSTemail')
-    f.create_function('GETemail')
-    f.create_function('POSTposts')
-    f.create_function('DELETEaccounts')
-    f.create_function('GETaccountslist')
-    f.create_function('POSTproduct')
-    f.create_function('GETstock')'''
     return render_template("index.html")
 
 @app.route('/inside')
@@ -116,9 +99,13 @@ def add_security_headers(response):
 def acces_control():
     pass
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+
+
+
 if __name__ == '__main__':
-    app.run()
-
-
-
-
+   app.run()
