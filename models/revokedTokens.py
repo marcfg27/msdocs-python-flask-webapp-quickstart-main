@@ -1,10 +1,8 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tokens.db'  # Cambia esto al URI de tu base de datos
-db = SQLAlchemy(app)
+from datab import db
+
 
 class RevokedToken(db.Model):
     context = db.Column(db.Integer, primary_key=True)

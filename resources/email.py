@@ -39,7 +39,7 @@ class eMail(Resource):
             if not valid_code:
                 validation.input_validation_fail_code_caller(g.user,data['code'],request)
                 return {'message': 'Invalid Code. Only alphanumeric characters are allowed.'}, 400
-            if g.user is not None and True: # verify_verification_code(g.user.code, code):
+            if g.user is not None and True: #verify_verification_code(g.user.code, code):
                 g.user.code = None
                 g.user.save_to_db()
                 username = g.user.username
@@ -56,8 +56,7 @@ class eMail(Resource):
                 response.headers['Access-Control-Expose-Headers'] = 'Authorization'
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
                 response.set_cookie('ctx', contexto_usuario, samesite='Strict', secure=True, httponly=True, max_age=6000)
-                response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-                response.headers['Pragma'] = 'no-cache'
+
                 return response
             else:
                 response = jsonify({'correct': False})
@@ -65,7 +64,7 @@ class eMail(Resource):
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
                 return response
         except Exception as e:
-            response = jsonify({'message': "Error: " + str(e)}, 409)
+            response = jsonify({'message': "Error: " + str(e)})
             response.status_code = 409
             return response
 
@@ -94,7 +93,7 @@ class eMail(Resource):
                     response.headers['Access-Control-Allow-Credentials'] = 'true'
                     return response
             except Exception as e:
-                response = jsonify({'message': "Error: " + str(e)}, 409)
+                response = jsonify({'message': "Error: " + str(e)})
                 response.status_code = 409
                 return response
 
@@ -162,7 +161,7 @@ class eMail2(Resource):
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
                 return response
             except Exception as e:
-                response = jsonify({'message': "Error: " + str(e)}, 409)
+                response = jsonify({'message': "Error: " + str(e)})
                 response.status_code = 409
                 return response
 
@@ -207,6 +206,6 @@ class eMail3(Resource):
 
                     return response
         except Exception as e:
-            response = jsonify({'message': "Error: " + str(e)}, 409)
+            response = jsonify({'message': "Error: " + str(e)})
             response.status_code = 409
             return response

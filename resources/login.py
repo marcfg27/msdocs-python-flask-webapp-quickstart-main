@@ -1,7 +1,6 @@
 import hashlib
 import hmac
 import logging
-import os
 import secrets
 import string
 from functools import wraps
@@ -67,19 +66,67 @@ def catch_exceptions(f):
             return {'message': str(e)}, 429
         except Exception as e:
             logging.error('Unexpected error during login: %s', e)
-            response = jsonify({"message": "An unexpected error occurred during login"})
+            response = {"message": "An unexpected error occurred during login"}
             response.status_code = 500
             return response
     return wrapper
 
 
 class Login(Resource):
-
+    @catch_exceptions
+    @limiter.limit("5/minute")
     def post(self):
         try:
             with lock.lock:
-                return {'message':os.environ.get('SCM_DO_BUILD_DURING_DEPLOYMENT')}, 200
+                parser = reqparse.RequestParser()
+                parser.add_argument('username', type=str, required=True, help="This field cannot be left blanck")
+                parser.add_argument('password', type=str, required=True, help="This field cannot be left blanck")
+                data = parser.parse_args()
+                username = escape(data['username'])
+                username = username.casefold()
+                username = unidecode(username)
+                password=data['password']
 
+
+                acc = AccountsModel.get_by_username(username)
+                if acc:
+                    if(acc.verify_password(password)):
+                        caracteres = string.ascii_letters + string.digits
+                        contexto_usuario = ''.join(secrets.choice(caracteres) for i in range(20))
+
+                        hash_contexto_usuario = hmac.new(current_app.secret_key.encode('utf-8'), contexto_usuario.encode('utf-8'),
+                                                         hashlib.sha256).hexdigest()
+                        t = 180
+                        token = generate_auth_token(acc.id,hash_contexto_usuario,t)
+                        response = jsonify({'message': 'Success'})
+                        #response.headers['Authorization'] = f'Bearer {token}+{hash_contexto_usuario}'
+                        response.headers['Authorization'] = f'Bearer {token}'
+                        response.headers['Access-Control-Expose-Headers'] = 'Authorization'
+                        response.set_cookie('ctx', contexto_usuario, samesite='Strict', secure=True, httponly=True,max_age=t)
+                        LoginLog.registro_exitoso_caller(username,request)
+
+                    else:
+                        LoginLog.registro_contrasena_incorrecta_caller(username,request)
+                       # logging.warning('Incorrect password for user %s from IP address: %s',
+                        #             request.remote_addr, username)
+
+                        response = jsonify({"message": "Login failed; Invalid user ID or password"})
+
+                        #response = jsonify({"message": "Incorrect password for user [{}].".format(username)})
+                        response.status_code = 400
+                else:
+                    LoginLog.registro_usuario_incorrecto_caller(username, request)
+                    #logging.warning('Incorrect user:  %s from IP address: %s',
+                     #               request.remote_addr, username)
+                    #response = jsonify({"message": "Account with username [{}] doesen't exists.".format(username)})
+                    response = jsonify({"message": "Login failed; Invalid user ID or password"})
+                    response.status_code = 400
+
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+
+            return response
         except Exception as e:
             logging.error('Unexpected error during login: %s', e)
             response = jsonify({"message": "An unexpected error occurred during login"})

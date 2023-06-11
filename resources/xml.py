@@ -5,7 +5,7 @@ from flask_restful import Resource
 from Persona import Persona as person
 from models.accounts import auth, g
 from flask import request
-from lxml import etree
+#from lxml import etree
 import defusedxml.ElementTree
 from LogManager import validation
 class XML_HTTP(Resource):
@@ -16,7 +16,7 @@ class XML_HTTP(Resource):
         try:
 
             archivo = request.files['archivo']
-            size = request.form.get('size')
+            size = int(request.form.get('size'))
             if archivo:
                 if(size > 1024 * 1024):
                     validation.input_validation_fail_file_size_caller(g.user.username,request)
@@ -30,15 +30,15 @@ class XML_HTTP(Resource):
                     if isinstance(persona_recuperada,
                                   dict) and 'nombre' in persona_recuperada and 'edad' in persona_recuperada and len(persona_recuperada) == 2:
                         #Hacer la operacion que se crea conveniente
-                        return 'JSON received and processed successfully.', 200
+                        return {'message': 'JSON received and processed successfully.'}, 200
                     else:
-                        return 'Invalid object format. Check the required attributes.', 400
+                        return {'message':'Invalid object format. Check the required attributes.'}, 400
 
                     '''elif nombre_archivo.endswith('.pickle'):
                     # Deserializar archivo Pickle
                     persona_recuperada = pickle.load(archivo)
                     return 'PICKLE received and processed successfully.', 200'''
-                else:
+                elif nombre_archivo.endswith('.xml'):
 
                     '''parser = etree.XMLParser(resolve_entities=False)
                     tree = etree.parse(archivo, parser)
@@ -62,11 +62,16 @@ class XML_HTTP(Resource):
                         print(f"Contenido: {element.text}")
                         print("---")
 
-                    return 'XML received and processed successfully.', 200
+                    return {'message': 'XML processed successfully.'}, 200
+
+                else:
+                    return {'message':'Invalid file extension'} , 400
+
+
             else:
-                return 'No file provided.', 400
+                return {'message':'No file provided.'}, 400
         except Exception as e:
-            return 'Error analyzing the file: ' + str(e), 500
+            return {'message':'Error analyzing the file'}, 500
 
 
 
